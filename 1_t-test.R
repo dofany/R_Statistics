@@ -1,5 +1,7 @@
 #### Power Analysis ####
 # 적정한 표본의 갯수를 산출
+# p-value값이 0.05이하면 차이가 있고, 이상이면 없다.
+# p-value값이 0.05 미만이면 정규분포 Fail, 0.05이상이면 정규분포 Pass
 # cohen's d (effective size) : 두 집단의 평균 차이를 두 집단의 표준편차의 합으로 나눠준다.
 # # 절대값(1의평균 - 2의평균) / 루트(제곱근)((1.표준편차^2 + 2.표준편차^2) /2)
 
@@ -247,11 +249,105 @@ t.test(RESULT~GROUP, data=data2, paired=T)
 
 #### 실습5 ####
 ### https://www.kaggle.com/kappernielsen/independent-t-test-example
-### 주제 ㅣ 수학 점수가 남학생과 여학생에 따라서 같은지 다른지 알고싶다.
+### 주제1 : 남녀별로 각 시험에 대해 평균 차이가 있는지 알고 싶다.
+### 주제2 : 같은 학생 입장에서 G1과 G3에 대해 변화가 있었는지 확인
 ### 첫번째 시험(G1)과 세번째 시험(G3)을 사용
 
 mat <- read.csv("../data/student-mat.csv",header = T)
 str(mat)
 View(mat)
 
-math = subset()
+summary(mat$G1)
+summary(mat$G2)
+summary(mat$G3)
+
+table(mat$sex)
+
+#남녀별로 시험 평균
+library(dplyr)
+#내가한거
+mat%>%group_by(sex)%>%summarise(grade1_mean=mean(G1))
+mat%>%group_by(sex)%>%summarise(grade2_mean=mean(G2))
+mat%>%group_by(sex)%>%summarise(grade3_mean=mean(G3))
+
+#쌤이한거
+mat%>%select(sex,G1,G2,G3)%>%group_by(sex)%>%
+  summarise(mean_g1=mean(G1), mean_g2=mean(G2), mean_g3=mean(G3),
+            #연속변수인것 확인함
+            #인원수 세어보기(혹시나 인원수가 달라졌을까바 확인차원)
+            cnt_g1=n(),cnt_g2=n(),cnt_g3=n(), 
+            #표준편차 알아보기
+            sd_g1=sd(G1),sd_g2=sd(G2),sd_g3=sd(G3))
+
+shapiro.test(mat$G1[mat$sex=="M"])
+#정규분포 아님! 왜냐하면 p-value = 0.01363 -> 0.5밑으로 들어옴
+#->대립가설을 채택한다는 것 
+
+shapiro.test(mat$G1[mat$sex=="F"])
+#p-value = 5.691e-05 
+#정규분포아님
+
+shapiro.test(mat$G2[mat$sex=="M"])
+shapiro.test(mat$G2[mat$sex=="F"])
+
+shapiro.test(mat$G2[mat$sex=="M"])
+shapiro.test(mat$G2[mat$sex=="F"])
+
+#정규분포임을 가정해서 분석해도 결과값은 크게 다르지 않음
+#데이터가 넉넉하면 정규분포라고 가정하고 진행해 보통..
+
+#그래서! 정규분포라고 가정함
+var.test(G1 ~ sex, data=mat)
+var.test(G2 ~ sex, data=mat)
+var.test(G3 ~ sex, data=mat)
+
+# 남,녀 평균 성적 비교
+# 양측 검사
+t.test(G1 ~ sex, data=mat, var.equal=T, alt="two.sided")
+t.test(G2 ~ sex, data=mat, var.equal=T, alt="two.sided")
+t.test(G3 ~ sex, data=mat, var.equal=T, alt="two.sided")
+
+# 작다라는 측면에서 봤을때 의미가 있다.
+# 단측 검사
+t.test(G1 ~ sex, data=mat, var.equal=T, alt="less")
+t.test(G2 ~ sex, data=mat, var.equal=T, alt="less")
+t.test(G3 ~ sex, data=mat, var.equal=T, alt="less")
+
+# 정규분포가 아닐때의 결과값은?
+# p-value값이 0.05이하면 차이가 있고, 이상이면 없다.
+wilcox.test(G1~sex,data=mat)
+wilcox.test(G2~sex,data=mat)
+wilcox.test(G2~sex,data=mat)
+
+
+# t-test의 결과로 해석
+### 같은 학생 입장에서 G1과 G3에 대해 변화가 있었는지 확인
+mat %>% select(G1,G3) %>% summarise(mean_g1=mean(G1), mean_g3=mean(G3))
+
+# 데이터 long타입으로 변화
+library(tidyr)
+mydata <- gather(mat, key="GROUP", value="RESULT", "G1","G3")
+View(mydata)
+
+# Paired sample t-test 한 결과 : 차이가 있다. 
+t.test(mydata$RESULT ~ mydata$GROUP, data = mydata, paired=T)
+
+# 정규분포한 결과 차이가 없다.
+wilcox.test(mydata$RESULT ~ mydata$GROUP, data = mydata, paired=T)
+
+# 변형하지 않고 원본으로 사용
+t.test(mat$G1, mat$G3, paired = T)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
