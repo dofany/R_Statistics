@@ -37,15 +37,42 @@
 4. 통계 분석 방법
   (1) 차이 검정
     - 집단간의 평균 차이 검정
-    - t-test, anova, ancova, manova...
+    - t-test(t:샘플로 뽑은 데이터의 통계량), anova, ancova, manova...
     - 변수 타입 : 명목 변수 -> 연속 변수
       
       1) t-test : 비교 대상이 2개까지인 경우
         - 하나의 집단으로 검정 : one sample t-test
         - 두개의 집단으로 검정 : independent two sample t-test
-        - 시간의 차이(하나의 집단) : paired sample t-test    
+        - 시간의 차이(하나의 집단) : paired sample t-test   
+        - 조건
+          *. 결과값이 연속변수냐 아니냐 따져야함
+            아닐 경우 : Mann-Whitney U test, Wilcoxen rank-sum test, Mann-Whitney_wilcoxen test, MWW
+            
+          *. 정규 분포 여부
+            아닐 경우 : MWW
+            
+          *. 등분산 여부
+            아닐 경우 : welch's t-test  
+            
+          *. paired t-test인 경우 Wilcoxen signed rank test(비모수일 경우)
+            
+          *. 모수적 통계방식과 비모수적 통계방식
+            - 모수적인 방식 : 모집단이 정규분포일 경우
+            - 비모수적인 방식 : 모집단이 정규분포가 아닐 경우
+              
+              A 20  21  21  22  124 
+              B 40  41  42  43  42
+              
+              A   A   A   A  B  B  B   B   B  A
+              20  21  21  22 40 41 42  42  43 124
+              1   2.5 2.5 4  5  6  7.5 7.5 9  10
+              
+              1 + 2.5 + 2.5 + 4 + 10 = 20
+              5 + 6 + 7.5 + 7.5 + 9 = 35
+              
+              
         
-      2) anova : 비교 대상이 3개 이상인 경우
+      2) anova : 비교 대상이 3개 이상인 경우(평균말고 분산으로 분석)
         - 집단이 3개 이상일 때 : one way anova, 일원 배치 분산 분석
           independent two sample t-test의 확장
         
@@ -57,5 +84,19 @@
         - 시간 + 요인에 따른 차이 검정 : two way repeated measured anova
         
         * 사후 검정 : Tukey, DUNcan, Bonferroni, Fisher's LSD, ...
+        
+        - 조건
+          *. 결과값이 연속변수
+            아닐 경우 ㅣ Kruskal-wallis H test
+          
+          *. 정규 분포 여부
+            아닐 경우 : Kruskal-wallis H test
+            
+          *. 등분산 여부
+            아닐 경우 : Welch's anova
+            
+          모든 조건을 만족하는 경우 anova를 사용하고 사후검정은 Tukey를 사용
+          
+            
     
   (2) 관계 검정   
