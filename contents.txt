@@ -43,7 +43,7 @@
       1) t-test : 비교 대상이 2개까지인 경우
         - 하나의 집단으로 검정 : one sample t-test
         - 두개의 집단으로 검정 : independent two sample t-test
-        - 시간의 차이(하나의 집단) : paired sample t-test   
+        - 시간의 차이(하나의 집단, 쌍체, 대응) : paired sample t-test   
         - 조건
           *. 결과값이 연속변수냐 아니냐 따져야함
             아닐 경우 : Mann-Whitney U test, Wilcoxen rank-sum test, Mann-Whitney_wilcoxen test, MWW
@@ -96,7 +96,18 @@
             아닐 경우 : Welch's anova
             
           모든 조건을 만족하는 경우 anova를 사용하고 사후검정은 Tukey를 사용
-          
-            
+  (2) 관계 검정
+    - 변수와 변수의 관계를 검정(집단이 아닌 변수끼리)
+    - 변수 타입 : 연속변수 -> 연속변수, 질적변수(명목) -> 질적변수(명목) 판단  
     
-  (2) 관계 검정   
+    1) 상관 분석
+      - 연속변수 -> 연속변수
+      
+    2) 회귀 분석
+      - 연속변수 -> 연속변수
+      
+    3) 교차 분석(카이제곱 분석)
+      - 질적변수 -> 질적변수
+    
+    
+    
