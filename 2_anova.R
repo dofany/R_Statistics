@@ -459,11 +459,51 @@ friedman.test.with.post.hoc(value ~ Var2 | Var1, rt)
 
 0.05/3
 
+############################################################################################################
 
+#### 사례4 : Two Way RM ANOVA  ####
 
+df <- read.csv("../data/10_rmanova.csv",header = T)
+View(df)
 
+### 데이터를 long형으로 변환
+library(reshape2)
 
+# 첫번째 방법(melt)
+df1 <- melt(df, id=c("group","id"),variable.name="time",value.name = "month")
+df1
 
+# 두번째 방법(reshape)
+df2 <- reshape(df,direction = "long", varying = 3:6, sep="")
+df2
+
+## 그래프 그리기
+?interaction.plot
+
+# 인자를 넘겨주기 위해 factor형으로 변환
+df1$group <- factor(df1$group)
+df1$id <- factor(df1$id)
+str(df1)
+
+interaction.plot(df1$time, df1$group, df1$month)
+
+out <- aov(month ~ group*time + Error(id), data=df1)
+summary(out)
+
+# 차이가 있으니 사후검정
+
+# 각자의 그룹을 시점별로 분석하기 위해 데이터를 시점별로 쪼갠다.
+df_0 <- df1[df1$time == "month0" ,]
+df_1 <- df1[df1$time == "month1" ,]
+df_3 <- df1[df1$time == "month3" ,]
+df_6 <- df1[df1$time == "month6" ,]
+
+t.test(month ~ group, data=df_0)
+t.test(month ~ group, data=df_1)
+t.test(month ~ group, data=df_3)
+t.test(month ~ group, data=df_6)
+
+0.05 / 6
 
 
 
