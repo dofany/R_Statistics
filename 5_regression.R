@@ -261,30 +261,171 @@ plot(result, scale="adjr2")
 #### 실습 예제1 ####
 # 가장 영향력있는 변수들은 무엇인가?
 # 정규성 검증, 등분산성 검증, 다중공선성 검증
-# 독립변수들이 출산율과 관계가 있는가?
+# 독립변수들이 출산율과 관계가 있는가? => 큰 영향을 미치진 않는다.
 
 mydata <- read.csv("../data/regression.csv",fileEncoding = "CP949",encoding = "UTF-8")
 View(mydata)
 str(mydata)
+head(mydata)
 
+# 군별 제외
+mydata1 <- mydata[, -1]
+head(mydata1)
+
+reg1 <- lm(birth_rate ~ ., data=mydata1)
+summary(reg1)
+
+# culture_center와 urban park는 제외
+reg2 <- lm(birth_rate ~ social_welfare + active_firms + pop + doctors + tris + kindergarten + dummy, data = mydata)
+summary(reg2)
+
+# backward(하나씩 빼면서 찾는 것)
+full.model <- lm(birth_rate ~ ., data=mydata1)
+reduced.model <- step(full.model, direction = "backward")
+reduced.model
+
+reg3 <- lm(birth_rate ~ social_welfare + active_firms + pop + tris + kindergarten, data = mydata)
+summary(reg3)
+
+par(mfrow=c(2,2))
+plot(reg2)
+plot(reg3)
+
+# 정규성 검증
+shapiro.test(resid(reg2))
+
+# 정규성이 만족하지 않으므로 결과 변수에 람다 승을 해준다.
+library(car)
+summary(powerTransform(mydata$birth_rate))
+
+reg4 <- lm(birth_rate ~ social_welfare + active_firms + pop + 
+             doctors + tris + kindergarten + dummy, data = mydata)
+summary(reg4)
+shapiro.test(resid(reg4))
+plot(reg4)
+
+# 다중 공선성(2를 넘으면 다중 공선성 의심)
+sqrt(vif(reg1))
+sqrt(vif(reg2))
+sqrt(vif(reg3))
+sqrt(vif(reg4))
+
+# 등분산성
+ncvTest(reg1)
+ncvTest(reg2)
+ncvTest(reg3)
+ncvTest(reg4)
+
+spreadLevelPlot(reg4)
 
 #### 실습 예제2 ####
 ### 서울시 자전거 분석
 ## 데이터 준비
-bike <- read.csv("../data/SeoulBikeData.csv",fileEncoding = "CP949",encoding = "UTF-8")
+data <- read.csv("../data/SeoulBikeData.csv",fileEncoding = "CP949",encoding = "UTF-8")
+summary(data)
+str(data)
 
+library(dplyr)
 # 1. 시간대별로 평균 및 대가 대여 되었을까?
+table(data$Hour)
+
+result1 <- data %>% group_by(Hour) %>% summarise(count=mean(Rented.Bike.Count)) %>% arrange(desc(count))
+result1
+
 
 # 2. 위의 결과를 시각화 
 
+library(ggplot2)
+par(mfrow= c(1,1))
+
+# ggplot 한글적용
+font_import()
+theme_set(theme_grey(base_family='NanumGothic'))
+
+ggplot(result1, aes(Hour, count)) + 
+  geom_line(color="blue",size=2) + 
+  geom_vline(xintercept = 8, size=2, color="red") +
+  geom_vline(xintercept = 18, size=2, color="red") + 
+  annotate(geom="text", x=6,y=1100, label="출근") + 
+  annotate(geom="text", x=15,y=1500, label="퇴근")
+
+  
 # 3. 2016년 1월 1일은 금요일이었다. Date변수에서 요일을 뽑아서 파생변수 만들기
 
+fnWeek <- function(n){
+  w = n %% 7;
+    
+  if(w == 0){
+    ret = "FRI"
+  }else if(w == 1){
+    ret = "SAT"
+  }else if(w == 2){
+    ret = "SUN"
+  }else if(w == 3){
+    ret = "MON"
+  }else if(w == 4){
+    ret = "TUE"
+  }else if(w == 5){
+    ret = "WED"
+  }else if(w == 6){
+    ret = "THU"
+  }
+  
+  return(ret)
+}
+
+View(data)
+d <- as.Date(data$Date,"%d/%m/%Y") - as.Date("2016/01/01")
+class(as.integer(d))
+
+data$weekdays <- unlist(lapply(as.integer(d), fnWeek))
+str(data)
+
+
 # 4. 요일별로 평균 몇 대가 대여되었을까?
+week.mean <- data %>% group_by(weekdays) %>% 
+  summarise(count=mean(Rented.Bike.Count)) %>% arrange(desc(count))
+week.mean
 
 # 5. 위의 결과를 시각화
+# par함수는 ggplot에서는 안됨
+ggplot(week.mean, aes(reorder(weekdays,count), count, fill=weekdays)) + 
+  geom_col() + coord_flip()
 
 # 6. 요일 별로 시간대별 그래프로 시각화
+week.date <- data %>% select(weekdays, Hour, Rented.Bike.Count) %>% 
+  group_by(weekdays, Hour) %>%
+  summarise(mean=mean(Rented.Bike.Count))
+week.date
+
+week.date %>% filter(weekdays=='MON')
+week.date[which(week.date$weekdays == "MON"), ]
+
+a <- ggplot(week.date[which(week.date$weekdays =="MON"), ], aes(Hour, mean)) + geom_line() + ggtitle("MON")
+b <- ggplot(week.date[which(week.date$weekdays =="TUE"), ], aes(Hour, mean)) + geom_line() + ggtitle("TUE")
+c <- ggplot(week.date[which(week.date$weekdays =="WED"), ], aes(Hour, mean)) + geom_line() + ggtitle("WED")
+d <- ggplot(week.date[which(week.date$weekdays =="THU"), ], aes(Hour, mean)) + geom_line() + ggtitle("THU")
+e <- ggplot(week.date[which(week.date$weekdays =="FRI"), ], aes(Hour, mean)) + geom_line() + ggtitle("FRI")
+f <- ggplot(week.date[which(week.date$weekdays =="SET"), ], aes(Hour, mean)) + geom_line() + ggtitle("SET")
+g <- ggplot(week.date[which(week.date$weekdays =="SUN"), ], aes(Hour, mean)) + geom_line() + ggtitle("SUN")
+
+
+# 한 화면에 여러개의 그래프 그리기
+ggplot(week.date, aes(Hour, mean)) + geom_line() + facet_wrap(~weekdays)
 
 # 7. 선형 분석
 # 각 변수들이 자전거 대여 횟수와 관련이 있는가?
 # 온도에 따라 몇 대의 자전거가 대여 될까?(예를 들어 온도가 23도일때 자전거 대여횟수는 998대이다.)
+
+# 산포도 그리기
+plot(x=data$Temperature.캜., y=data$Rented.Bike.Count)
+
+linear_reg <- lm(Rented.Bike.Count ~ Temperature.캜., data=data)
+summary(linear_reg)
+
+a = 29.0811
+b = 329.9525
+abline(a=b, b=a, col="red")
+
+y = a * 23 + b
+cat("온도가 23도일 때, 예측되는 대여 횟수는 ",y)        
